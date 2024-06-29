@@ -17,14 +17,15 @@ if [ -e $DATADIR ]; then
     fi
 fi
 
-# MySQL を初期化
-# https://dev.mysql.com/doc/refman/8.0/ja/postinstallation.html
-# すでに datadir がある場合失敗するので OK
-mysqld --datadir="$DATADIR" --log-error="$DATADIR/mysql.log" --initialize-insecure
-# undo_00{1,2} を消しておかないと起動になぜか失敗する
-rm $DATADIR/undo_001 $DATADIR/undo_002
+if [ ! -e $DATADIR ]; then
+    # MySQL を初期化
+    echo "MySQL を初期化します..."
+    # https://dev.mysql.com/doc/refman/8.0/ja/postinstallation.html
+    mysqld --datadir="$DATADIR" --log-error="$DATADIR/mysql.log" --initialize-insecure
+fi
 
 # MySQL の起動
+rm -f $DATADIR/undo_001 $DATADIR/undo_002 # undo_00{1,2} を消しておかないと起動に失敗する
 mysqld --datadir="$DATADIR" --log-error="$DATADIR/mysql.log" --socket="$DATADIR/mysql.sock" &
 MYSQL_PID=$!
 

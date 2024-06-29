@@ -1,4 +1,4 @@
-package main
+package sshKeys
 
 import "testing"
 
@@ -21,20 +21,20 @@ func TestIsAllowedString(t *testing.T) {
 }
 
 func TestIsSSHKey(t *testing.T) {
-	if !isSSHKey("ssh-rsa abcde test@example.com") {
+	if !IsValidSSHPublicKey("ssh-rsa abcde test@example.com") {
 		t.FailNow()
 	}
 
-	if isSSHKey("agent-forwarding ssh-rsa abcde test@example.com") {
+	if IsValidSSHPublicKey("agent-forwarding ssh-rsa abcde test@example.com") {
 		t.FailNow()
 	}
-	if isSSHKey("agent-forwarding,command=\"/bin/bash\" ssh-rsa abcde test@example.com") {
+	if IsValidSSHPublicKey("agent-forwarding,command=\"/bin/bash\" ssh-rsa abcde test@example.com") {
 		t.FailNow()
 	}
 }
 
 func TestCreateAuthorizedKeyLine_emptyOption(t *testing.T) {
-	opt := option{
+	opt := Option{
 		PermitOpen:        nil,
 		NoAgentForwarding: false,
 		NoUserRc:          false,
@@ -46,13 +46,13 @@ func TestCreateAuthorizedKeyLine_emptyOption(t *testing.T) {
 
 	expect := "ssh-rsa abcde== user@example.com"
 
-	if got := createAuthorizedKeyLine(k, opt); got != expect {
+	if got := CreateAuthorizedKeyLine(k, opt); got != expect {
 		t.Errorf("フォーマットが違う: %s", got)
 	}
 }
 
 func TestCreateAuthorizedKeyLine_withOption(t *testing.T) {
-	opt := option{
+	opt := Option{
 		PermitOpen: []address{
 			{Hostname: "host1.example.com", Port: 8080},
 			{Hostname: "host2.example.com", Port: 8081},
@@ -67,7 +67,7 @@ func TestCreateAuthorizedKeyLine_withOption(t *testing.T) {
 
 	expect := "permitopen=\"host1.example.com:8080\",permitopen=\"host2.example.com:8081\",no-agent-forwarding,no-user-rc,no-x11-forwarding,no-pty ssh-rsa abcde== user@example.com"
 
-	if got := createAuthorizedKeyLine(k, opt); got != expect {
+	if got := CreateAuthorizedKeyLine(k, opt); got != expect {
 		t.Errorf("フォーマットが違う: %s", got)
 	}
 }

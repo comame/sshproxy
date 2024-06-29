@@ -1,11 +1,11 @@
-package main
+package sshKeys
 
 import (
 	"fmt"
 	"strings"
 )
 
-type option struct {
+type Option struct {
 	PermitOpen        []address
 	NoAgentForwarding bool
 	NoUserRc          bool
@@ -14,7 +14,7 @@ type option struct {
 	Command           []string
 }
 
-func (o option) String() string {
+func (o Option) String() string {
 	var s []string
 
 	for _, po := range o.PermitOpen {
@@ -48,8 +48,13 @@ func (a address) String() string {
 	return fmt.Sprintf("%s:%d", a.Hostname, a.Port)
 }
 
-// 渡される文字列によってインジェクションが起きないと想定する。
-func createAuthorizedKeyLine(sshKey string, opt option) string {
+// 渡された SSH 公開鍵とオプションから、authorized_keys の行を生成する。
+// `sshKey` は有効な公開鍵のフォーマットであることを想定する
+func CreateAuthorizedKeyLine(sshKey string, opt Option) string {
+	if !IsValidSSHPublicKey(sshKey) {
+		panic("got malformed ssh public key")
+	}
+
 	optStr := opt.String()
 	if optStr == "" {
 		return sshKey
@@ -58,12 +63,12 @@ func createAuthorizedKeyLine(sshKey string, opt option) string {
 }
 
 var (
-	keytypeRSA     = "ssh-rsa"
-	keytypeED25519 = "ssh-ed25519"
+	keyTypeRSA     = "ssh-rsa"
+	keyTypeED25519 = "ssh-ed25519"
 )
 
-func isKeytype(str string) bool {
-	return str == keytypeRSA || str == keytypeED25519
+func isKeyType(str string) bool {
+	return str == keyTypeRSA || str == keyTypeED25519
 }
 
 func isAllowedChar(c rune, allowedChars string) bool {
@@ -127,13 +132,14 @@ func isSSHHostname(str string) bool {
 	return true
 }
 
-func isSSHKey(str string) bool {
+// 引数が有効な SSH 公開鍵であることを検証する
+func IsValidSSHPublicKey(str string) bool {
 	s := strings.Split(str, " ")
 	if len(s) != 3 {
 		return false
 	}
 
-	if !isKeytype(s[0]) {
+	if !isKeyType(s[0]) {
 		return false
 	}
 
